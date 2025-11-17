@@ -17,6 +17,6 @@ Normal is around 0.00% to 0.01%. If it goes very positive (like +0.05% or higher
 `pip install flask requests`<br><br>
 
 ## Run
-`python funding_rate_monitor.py` <br><br>
+`python funding_rate_monitor_dashboard.py` <br><br>
 Open `http://127.0.0.1:5000` in the browser
 
