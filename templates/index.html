@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Funding Rates</title>
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+
+    <style>
+        /*Fix table size so it will not shift as the page load*/
+        #table-area {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        table {
+            width: 100%;
+        }
+
+        th:nth-child(1), td:nth-child(1) {
+            width: 200px;
+        }      
+
+        th:nth-child(2), td:nth-child(2) {
+            width: 250px;
+        }      
+
+        th:nth-child(3), td:nth-child(3) {
+            width: 200px;
+        }      
+    </style>
+</head>
+
+<body class="p-4">  <!--"p-4" is Bootstrap keyword, p for padding, 4 is the size-->
+
+<h1 class="text-primary mb-3">Real Time Funding Rate Monitor</h1>
+
+<p class="text-muted">
+    Data is fetched from the Binance API once every 60 minutes.
+    The table below updates every second to show progress.
+</p>
+
+<!-- total number of symbols on Binance (fixed number) -->
+<div class="mb-2">
+    <strong id="total-symbols"></strong>  <!--Empty tag, to be injected by Javascript-->
+</div>
+
+<!-- how many have been fetched so far -->
+<div class="mb-2">
+    <strong id="count"></strong>
+</div>
+
+<!-- the current Sydney time -->
+<div class="mb-2">
+    <strong id="sydney-time"></strong>
+</div>
+
+<div id="table-area">
+    <table class="table table-striped table-bordered">
+        <thead class="table-dark">
+            <tr>
+                <th>Symbol</th>
+                <th>Funding Rate</th>
+                <th>Alert</th>
+            </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+    </table>
+</div>
+
+<script>
+
+    /* set real total symbol count */
+    var totalSymbolsOnBinance = "{{ total_symbols }}";
+
+    /* updates the Sydney time every second */
+    function updateSydneyTime() {
+        var now = new Date();
+
+        var options = {
+            timeZone: "Australia/Sydney",
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit"
+        };
+
+        var formatted = now.toLocaleString("en-AU", options);
+        document.getElementById("sydney-time").textContent =
+            "Sydney time: " + formatted;
+    }
+
+function refreshData() {
+
+    updateSydneyTime();
+
+    fetch("/funding_rate_shown_on_website")
+        .then(function(response) {
+            return response.json();
+        })
+        .then(function(data) {
+
+            /* total binance symbols */
+            document.getElementById("total-symbols").textContent =  /*JavaScript will then inject text into the empty tag located on line 43*/
+                "There are currently " + totalSymbolsOnBinance + " symbols on Binance.";
+
+            /* number fetched so far */
+            document.getElementById("count").textContent =
+                "Number of symbols fetched so far: " + data.length;
+
+            var rows = ""; // Creates empty string so it starts empty
+            for (var i = 0; i < data.length; i++) {
+
+                var symbol = data[i]["Symbol"];
+                var rate = data[i]["Funding rate"];
+                var alert = data[i]["Alert"];
+
+                var alertStyle = "";
+                if (alert === "VERY LOW" || alert === "VERY HIGH") {
+                    alertStyle = "style='color: red; font-weight: bold;'";
+                }
+
+                rows += "<tr>" +
+                        "<td>" + symbol + "</td>" +
+                        "<td>" + rate + "</td>" +
+                        "<td " + alertStyle + ">" + alert + "</td>" +
+                        "</tr>";
+            }
+
+            document.getElementById("table-body").innerHTML = rows;
+        })
+
+        .catch(function(error) {
+            document.getElementById("count").textContent =
+                "Error fetching data: " + error;
+        });
+}
+
+// run immediately
+refreshData();
+
+// update every 1 s. This is front end. So the Binance API is fetched every hour but the website (frontend) is refreshed every second
+setInterval(refreshData, 1000);
+
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
